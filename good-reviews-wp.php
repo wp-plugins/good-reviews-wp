@@ -3,7 +3,7 @@
  * Plugin Name: Good Reviews for WordPress
  * Plugin URI: http://themeofthecrop.com
  * Description: Add snippets of positive reviews and link to good reviews of your product or services on other websites. Outputs proper Schema.org markup so the reviews can be picked up by Google and other search engines.
- * Version: 1.0
+ * Version: 1.1
  * Author: Theme of the Crop
  * Author URI: http://themeofthecrop.com
  * License: GNU General Public License v2.0 or later
@@ -28,9 +28,21 @@ if ( ! defined( 'ABSPATH' ) )
 if ( !class_exists( 'grfwpInit' ) ) {
 class grfwpInit {
 
-	public $args = array(); // WP_Query arguments when retrieving reviews
+	/**
+	 *  WP_Query arguments when retrieving reviews
+	 */
+	public $args = array();
 
-	public $reviewed = array(); // Details about the object being reviewed for schema.org markup
+	/**
+	 * Details about the object  being reviews for schema.org markup
+	 */
+	public $reviewed = array();
+
+	/**
+	 * IDs of any printed review sets, to distinguish between multiple
+	 * widgest or sets of reviews on a single page
+	 */
+	public $ids = array();
 
 	/**
 	 * Initialize the plugin and register hooks
@@ -38,7 +50,7 @@ class grfwpInit {
 	public function __construct() {
 
 		// Common strings
-		define( 'GRFWP_TEXTDOMAIN', 'grfwpdomain' );
+		define( 'GRFWP_TEXTDOMAIN', 'good-reviews-wp' );
 		define( 'GRFWP_PLUGIN_DIR', untrailingslashit( plugin_dir_path( __FILE__ ) ) );
 		define( 'GRFWP_PLUGIN_URL', untrailingslashit( plugins_url( basename( plugin_dir_path( __FILE__ ) ), basename( __FILE__ ) ) ) );
 		define( 'GRFWP_PLUGIN_FNAME', plugin_basename( __FILE__ ) );
@@ -61,6 +73,7 @@ class grfwpInit {
 
 		// Register assets
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_assets' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 
 		// Reword the title placeholder text for a review post type
 		add_filter( 'enter_title_here', array( $this, 'rename_review_title' ) );
@@ -97,7 +110,10 @@ class grfwpInit {
 	 * @since 0.0.1
 	 */
 	public function load_textdomain() {
-		load_plugin_textdomain( GRFWP_TEXTDOMAIN, false, plugin_basename( dirname( __FILE__ ) ) . "/languages" );
+		load_plugin_textdomain( GRFWP_TEXTDOMAIN, false, plugin_basename( dirname( __FILE__ ) ) . "/languages/" );
+
+		// Backwards compatibility
+		load_plugin_textdomain( 'grfwpdomain', false, plugin_basename( dirname( __FILE__ ) ) . "/languages/" );
 	}
 
 	/**
@@ -106,6 +122,15 @@ class grfwpInit {
 	 */
 	public function register_assets() {
 		wp_register_style( 'gr-reviews', GRFWP_PLUGIN_URL . '/assets/css/style.css', '1.0' );
+		wp_register_script( 'gr-reviews', GRFWP_PLUGIN_URL . '/assets/js/frontend.js', array( 'jquery' ), false, true  );
+	}
+
+	/**
+	 * Enqueue the admin-only CSS
+	 * @since 1.1
+	 */
+	public function enqueue_admin_assets() {
+		wp_add_inline_style( 'wp-admin', '#adminmenu #menu-posts-grfwp-review .wp-menu-image:before { content: "\f313"; }' );
 	}
 
 	/**
@@ -129,8 +154,13 @@ class grfwpInit {
 	public function admin_order_posts( $query ) {
 
 		if( ( is_admin() && $query->is_admin ) && $query->get( 'post_type' ) == GRFWP_REVIEW_POST_TYPE ) {
-			$query->set( 'orderby', 'menu_order' );
-			$query->set( 'order', 'ASC' );
+			
+			// Don't override an existing orderby setting. This prevents other
+			// orderby options from breaking.
+			if ( !$query->get( 'orderby' ) ) {
+				$query->set( 'orderby', 'menu_order' );
+				$query->set( 'order', 'ASC' );
+			}
 		}
 
 		return $query;
@@ -172,17 +202,30 @@ class grfwpInit {
 			'posts_per_page' => -1,
 			'post_type' => GRFWP_REVIEW_POST_TYPE,
 			'orderby' => 'menu-order',
-			'order' => 'ASC'
+			'order' => 'ASC',
+			'cycle'	=> false
 		);
 		$this->args = apply_filters( 'grfwp_query_args_defaults', $this->args );
 
-		if ( isset( $args['review'] ) ) {
+		if ( !empty( $args['review'] ) ) {
 			$this->args['p'] = $args['review'];
 			unset( $this->args['posts_per_page'] );
 		}
 
-		if ( isset( $args['category'] ) ) {
+		if ( !empty( $args['category'] ) ) {
 			$this->args[GRFWP_REVIEW_CATEGORY] = $args['category'];
+		}
+
+		if ( !empty( $args['random'] ) ) {
+			$this->args['orderby'] = 'rand';
+		}
+
+		if ( !empty( $args['limit'] ) ) {
+			$this->args['posts_per_page'] = $args['limit'];
+		}
+
+		if ( !empty( $args['cycle'] ) ) {
+			$this->args['cycle'] = $args['cycle'];
 		}
 
 		$this->args = apply_filters( 'grfwp_query_args', $this->args );
