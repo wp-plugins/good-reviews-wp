@@ -3,7 +3,7 @@
  * Plugin Name: Good Reviews for WordPress
  * Plugin URI: http://themeofthecrop.com
  * Description: Add snippets of positive reviews and link to good reviews of your product or services on other websites. Outputs proper Schema.org markup so the reviews can be picked up by Google and other search engines.
- * Version: 1.1.1
+ * Version: 1.2
  * Author: Theme of the Crop
  * Author URI: http://themeofthecrop.com
  * License: GNU General Public License v2.0 or later
@@ -199,11 +199,12 @@ class grfwpInit {
 
 		// Set and filter defaults
 		$this->args = array(
-			'posts_per_page' => -1,
+			'posts_per_page' => 100, // sane upper limit
 			'post_type' => GRFWP_REVIEW_POST_TYPE,
 			'orderby' => 'menu-order',
 			'order' => 'ASC',
-			'cycle'	=> false
+			'cycle'	=> false,
+			'excerpt'	=> false,
 		);
 		$this->args = apply_filters( 'grfwp_query_args_defaults', $this->args );
 
@@ -226,6 +227,10 @@ class grfwpInit {
 
 		if ( !empty( $args['cycle'] ) ) {
 			$this->args['cycle'] = $args['cycle'];
+		}
+
+		if ( !empty( $args['excerpt'] ) ) {
+			$this->args['excerpt'] = $args['excerpt'];
 		}
 
 		$this->args = apply_filters( 'grfwp_query_args', $this->args );
@@ -262,7 +267,7 @@ class grfwpInit {
 	function append_to_content( $content ) {
 		global $post;
 
-		if ( !in_the_loop() || !is_main_query() || GRFWP_REVIEW_POST_TYPE !== $post->post_type ) {
+		if ( !in_the_loop() || !is_main_query() || is_search() || GRFWP_REVIEW_POST_TYPE !== $post->post_type ) {
 			return $content;
 		}
 
