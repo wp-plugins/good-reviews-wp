@@ -3,7 +3,7 @@
  * Plugin Name: Good Reviews for WordPress
  * Plugin URI: http://themeofthecrop.com
  * Description: Add snippets of positive reviews and link to good reviews of your product or services on other websites. Outputs proper Schema.org markup so the reviews can be picked up by Google and other search engines.
- * Version: 1.2
+ * Version: 1.2.1
  * Author: Theme of the Crop
  * Author URI: http://themeofthecrop.com
  * License: GNU General Public License v2.0 or later
@@ -29,6 +29,11 @@ if ( !class_exists( 'grfwpInit' ) ) {
 class grfwpInit {
 
 	/**
+	 * The single instance of this class
+	 */
+	private static $instance;
+
+	/**
 	 *  WP_Query arguments when retrieving reviews
 	 */
 	public $args = array();
@@ -45,12 +50,29 @@ class grfwpInit {
 	public $ids = array();
 
 	/**
+	 * Create or retrieve the single instance of the class
+	 *
+	 * @since 0.1
+	 */
+	public static function instance() {
+
+		if ( !isset( self::$instance ) ) {
+
+			self::$instance = new grfwpInit();
+
+			self::$instance->init();
+		}
+
+		return self::$instance;
+	}
+
+	/**
 	 * Initialize the plugin and register hooks
 	 */
-	public function __construct() {
+	public function init() {
 
 		// Common strings
-		define( 'GRFWP_TEXTDOMAIN', 'good-reviews-wp' );
+		define( 'GRFWP_TEXTDOMAIN', 'good-reviews-wp' ); // keep for back compat
 		define( 'GRFWP_PLUGIN_DIR', untrailingslashit( plugin_dir_path( __FILE__ ) ) );
 		define( 'GRFWP_PLUGIN_URL', untrailingslashit( plugins_url( basename( plugin_dir_path( __FILE__ ) ), basename( __FILE__ ) ) ) );
 		define( 'GRFWP_PLUGIN_FNAME', plugin_basename( __FILE__ ) );
@@ -84,9 +106,6 @@ class grfwpInit {
 		// Transform review $content variable to output review
 		add_filter( 'the_content', array( $this, 'append_to_content' ) );
 
-		// Flush the rewrite rules for the custom post types
-		register_activation_hook( __FILE__, array( $this, 'rewrite_flush' ) );
-
 		// Register the widget
 		add_action( 'widgets_init', array( $this, 'register_widgets' ) );
 
@@ -110,7 +129,7 @@ class grfwpInit {
 	 * @since 0.0.1
 	 */
 	public function load_textdomain() {
-		load_plugin_textdomain( GRFWP_TEXTDOMAIN, false, plugin_basename( dirname( __FILE__ ) ) . "/languages/" );
+		load_plugin_textdomain( 'good-reviews-wp', false, plugin_basename( dirname( __FILE__ ) ) . "/languages/" );
 
 		// Backwards compatibility
 		load_plugin_textdomain( 'grfwpdomain', false, plugin_basename( dirname( __FILE__ ) ) . "/languages/" );
@@ -141,7 +160,7 @@ class grfwpInit {
 		 $screen = get_current_screen();
 
 		 if  ( $screen->post_type == GRFWP_REVIEW_POST_TYPE ) {
-			  $title = __( 'Enter reviewer here', GRFWP_TEXTDOMAIN );
+			  $title = __( 'Enter reviewer here', 'good-reviews-wp' );
 		 }
 
 		 return $title;
@@ -154,7 +173,7 @@ class grfwpInit {
 	public function admin_order_posts( $query ) {
 
 		if( ( is_admin() && $query->is_admin ) && $query->get( 'post_type' ) == GRFWP_REVIEW_POST_TYPE ) {
-			
+
 			// Don't override an existing orderby setting. This prevents other
 			// orderby options from breaking.
 			if ( !$query->get( 'orderby' ) ) {
@@ -172,7 +191,7 @@ class grfwpInit {
 	 * Used to sanitize all values in an array
 	 * @since 0.1
 	 */
-	public function array_filter_recursive( $arr, $callback ) {
+	public static function array_filter_recursive( $arr, $callback ) {
 		foreach ( $arr as &$value ) {
 			if ( is_array( $value ) ) {
 				$value = grfwpInit::array_filter_recursive( $value, $callback );
@@ -201,7 +220,7 @@ class grfwpInit {
 		$this->args = array(
 			'posts_per_page' => 100, // sane upper limit
 			'post_type' => GRFWP_REVIEW_POST_TYPE,
-			'orderby' => 'menu-order',
+			'orderby' => 'menu_order',
 			'order' => 'ASC',
 			'cycle'	=> false,
 			'excerpt'	=> false,
@@ -311,7 +330,7 @@ class grfwpInit {
 
 		if ( $plugin == GRFWP_PLUGIN_FNAME ) {
 
-			$links['help'] = '<a href="' . GRFWP_PLUGIN_URL . '/docs" title="' . __( 'View the help documentation for Business Profile', GRFWP_TEXTDOMAIN ) . '">' . __( 'Help', GRFWP_TEXTDOMAIN ) . '</a>';
+			$links['help'] = '<a href="' . GRFWP_PLUGIN_URL . '/docs" title="' . __( 'View the help documentation for Business Profile', 'good-reviews-wp' ) . '">' . __( 'Help', 'good-reviews-wp' ) . '</a>';
 		}
 
 		return $links;
@@ -321,4 +340,8 @@ class grfwpInit {
 }
 } // endif;
 
-$grfwp_controller = new grfwpInit();
+// Global instance
+$grfwp_controller = grfwpInit::instance();
+
+// Flush the rewrite rules for the custom post types
+register_activation_hook( __FILE__, array( $grfwp_controller, 'rewrite_flush' ) );

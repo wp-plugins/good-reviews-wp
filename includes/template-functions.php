@@ -65,7 +65,7 @@ function grfwp_print_reviews( $args = array() ) {
 		$classes[] = 'gr-reviews';
 		$classes[] = empty( $grfwp_controller->args['p'] ) ? 'gr-reviews-all' : 'gr-reviews-single';
 		$classes[] = apply_filters( 'grfwp_microformat_css_class', 'hentry' );
-		
+
 
 		// Enqueue the frontend script if required
 		if ( !empty( $grfwp_controller->args['cycle'] ) && $reviews->found_posts > 1 ) {
@@ -82,7 +82,7 @@ function grfwp_print_reviews( $args = array() ) {
 					'delay' => apply_filters( 'grfwp_review_cycle_delay', 8000 )
 				)
 			);
-			
+
 			$classes[] = 'gr-reviews-cycle';
 		}
 
@@ -103,7 +103,7 @@ function grfwp_print_reviews( $args = array() ) {
 			$post_meta = $grfwp_controller->cpts->post_metadata;
 			$post_meta['img'] = get_the_post_thumbnail( get_the_ID(), apply_filters( 'grfwp_the_post_thumbnail_size', 'thumbnail' ) );
 
-			// Set 
+			// Set
 			if ( !empty( $grfwp_controller->args['excerpt'] ) ) {
 				$post_meta['review_date'] = '';
 				$post_meta['review_url'] = '';
@@ -134,7 +134,7 @@ function grfwp_print_reviews( $args = array() ) {
 						<meta itemprop="bestRating" content="<?php echo esc_attr( $post_meta['rating_max'] ); ?>">
 						<span class="screen-reader-text"><?php echo esc_attr( $post_meta['rating'] ) . '/' . esc_attr( $post_meta['rating_max'] ); ?></span>
 						<?php echo str_repeat( grfwp_the_star( true ), $post_meta['rating'] ); ?>
-						<?php echo str_repeat( grfwp_the_star( false ), ( $post_meta['rating_max'] - $post_meta['rating'] ) ); ?>
+						<?php echo str_repeat( grfwp_the_star( false ), max( ( $post_meta['rating_max'] - $post_meta['rating'] ), 0 ) ); ?>
 
 						<?php endif; ?>
 					</div>
@@ -165,14 +165,14 @@ function grfwp_print_reviews( $args = array() ) {
 
 						<?php if ( $post_meta['review_url'] ) : ?>
 						<a class="gr-review-url" itemprop="url" href="<?php echo esc_attr( $post_meta['review_url'] ); ?>">
-							<?php echo __( 'Read More', GRFWP_TEXTDOMAIN); ?>
+							<?php echo __( 'Read More', 'good-reviews-wp'); ?>
 						</a>
 						<?php endif;
 
 					else :
 					?>
 						<a class="gr-review-url" itemprop="sameAs" href="<?php echo get_permalink(); ?>">
-							<?php echo __( 'Read More', GRFWP_TEXTDOMAIN); ?>
+							<?php echo __( 'Read More', 'good-reviews-wp'); ?>
 						</a>
 					<?php endif; ?>
 
