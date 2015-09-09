@@ -16,8 +16,8 @@ class grfwpWidgetReviews extends WP_Widget {
 
 		parent::__construct(
 			'grfwp_widget_reviews',
-			__( 'Good Reviews', GRFWP_TEXTDOMAIN ),
-			array( 'description' => __( 'Display one or all of your reviews.', GRFWP_TEXTDOMAIN ), )
+			__( 'Good Reviews', 'good-reviews-wp' ),
+			array( 'description' => __( 'Display one or all of your reviews.', 'good-reviews-wp' ), )
 		);
 
 	}
@@ -39,7 +39,8 @@ class grfwpWidgetReviews extends WP_Widget {
 			'category' 	=> null,
 			'random'	=> false,
 			'limit'		=> null,
-			'cycle'		=> false
+			'cycle'		=> false,
+			'excerpt'	=> false,
 		);
 		$atts = array_merge( $atts, $instance );
 
@@ -70,16 +71,17 @@ class grfwpWidgetReviews extends WP_Widget {
 
 		$review = empty( $instance['review'] ) ? '' : $instance['review'];
 		$cycle = empty( $instance['cycle'] ) ? '' : $instance['cycle'];
+		$excerpt = empty( $instance['excerpt'] ) ? '' : $instance['excerpt'];
 		?>
 
 		<p>
-			<label for="<?php echo $this->get_field_id( 'title' ); ?>"> <?php _e( 'Title', GRFWP_TEXTDOMAIN ); ?></label>
+			<label for="<?php echo $this->get_field_id( 'title' ); ?>"> <?php _e( 'Title', 'good-reviews-wp' ); ?></label>
 			<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text"<?php if ( isset( $instance['title'] ) ) : ?> value="<?php echo esc_attr( $instance['title'] ); ?>"<?php endif; ?>>
 		</p>
 		<p>
 			<label for="<?php echo $this->get_field_id( 'review' ); ?>"> <?php _e( 'Reviews to display' ); ?></label>
 			<select class="widefat" id="<?php echo $this->get_field_id( 'review' ); ?>" name="<?php echo $this->get_field_name( 'review' ); ?>">
-				<option value=""><?php _e( 'Show all reviews', GRFWP_TEXTDOMAIN ); ?></option>
+				<option value=""><?php _e( 'Show all reviews', 'good-reviews-wp' ); ?></option>
 
 				<?php
 
@@ -92,7 +94,7 @@ class grfwpWidgetReviews extends WP_Widget {
 
 				foreach( $categories as $category ) {
 					?>
-					<option value="cat-<?php echo $category->slug; ?>"<?php if ( $review == 'cat-' . $category->slug ) : ?> selected<?php endif; ?>><?php echo __( 'Category: ', GRFWP_TEXTDOMAIN )  . esc_attr( $category->name ); ?></option>
+					<option value="cat-<?php echo $category->slug; ?>"<?php if ( $review == 'cat-' . $category->slug ) : ?> selected<?php endif; ?>><?php echo __( 'Category: ', 'good-reviews-wp' )  . esc_attr( $category->name ); ?></option>
 					<?php
 				}
 
@@ -129,6 +131,10 @@ class grfwpWidgetReviews extends WP_Widget {
 				<option value="fader"<?php if ( $cycle == 'fader' ) : ?> selected<?php endif; ?>>Fade between reviews</option>
 			</select>
 		</p>
+		<p>
+			<input type="checkbox" id="<?php echo $this->get_field_id( 'excerpt' ); ?>" name="<?php echo $this->get_field_name( 'excerpt' ); ?>" value="1" <?php checked( $excerpt, 1 ); ?>>
+			<label for="<?php echo $this->get_field_id( 'excerpt' ); ?>"><?php _e( 'Show excerpt only', GRFWP_REVIEW_POST_TYPE ); ?></label>
+		</p>
 
 		<?php
 	}
@@ -154,6 +160,7 @@ class grfwpWidgetReviews extends WP_Widget {
 		}
 
 		$instance['cycle'] = $new_instance['cycle'] == 'fader' ? 'fader' : '';
+		$instance['excerpt'] = $new_instance['excerpt'] == 1 ? true : false;
 
 		return $instance;
 
